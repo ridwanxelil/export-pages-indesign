@@ -1,0 +1,1166 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ExportPages v5 — Profesyonel Sayfa Dışa Aktarıcı</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&display=swap');
+
+  :root {
+    --ink: #0a0a0f;
+    --paper: #f5f2eb;
+    --accent: #d4522a;
+    --accent2: #1a3a5c;
+    --gold: #c8a96e;
+    --mid: #6b6560;
+    --rule: #d9d4ca;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { font-size: 16px; scroll-behavior: smooth; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'DM Mono', monospace;
+    overflow-x: hidden;
+  }
+
+  /* ─── GRAIN OVERLAY ─── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none; z-index: 1000; opacity: .4;
+  }
+
+  /* ─── HERO ─── */
+  .hero {
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    position: relative;
+    border-bottom: 2px solid var(--ink);
+  }
+
+  .hero-left {
+    padding: 60px 56px 60px 60px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    border-right: 2px solid var(--ink);
+    position: relative;
+  }
+
+  .hero-right {
+    background: var(--ink);
+    padding: 60px 56px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero-right::before {
+    content: '';
+    position: absolute;
+    width: 600px; height: 600px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(212,82,42,0.15) 0%, transparent 70%);
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  .version-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--accent);
+    border: 1.5px solid var(--accent);
+    padding: 6px 14px;
+    width: fit-content;
+    margin-bottom: 40px;
+  }
+
+  .version-tag::before {
+    content: '';
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: blink 1.4s ease infinite;
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+  }
+
+  .hero-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: clamp(52px, 6vw, 88px);
+    line-height: 0.95;
+    letter-spacing: -0.03em;
+    margin-bottom: 32px;
+  }
+
+  .hero-title em {
+    font-family: 'Instrument Serif', serif;
+    font-style: italic;
+    color: var(--accent);
+    font-weight: 400;
+  }
+
+  .hero-subtitle {
+    font-size: 15px;
+    line-height: 1.7;
+    color: var(--mid);
+    max-width: 420px;
+    margin-bottom: 48px;
+    font-family: 'DM Mono', monospace;
+    font-weight: 300;
+  }
+
+  .hero-meta {
+    display: flex;
+    gap: 32px;
+    padding-top: 32px;
+    border-top: 1px solid var(--rule);
+  }
+
+  .hero-meta-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .hero-meta-label {
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--mid);
+  }
+
+  .hero-meta-value {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--ink);
+    font-family: 'Syne', sans-serif;
+  }
+
+  /* ─── MOCK UI ─── */
+  .mock-ui {
+    position: relative;
+    z-index: 2;
+  }
+
+  .mock-window {
+    background: #1a1a24;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 40px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04);
+  }
+
+  .mock-titlebar {
+    background: #111118;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .mock-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+  }
+
+  .mock-dot.red { background: #d4522a; }
+  .mock-dot.yellow { background: #c8a96e; }
+  .mock-dot.green { background: #4caf82; }
+
+  .mock-title-text {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: rgba(255,255,255,0.3);
+    margin-left: 8px;
+    letter-spacing: 0.05em;
+  }
+
+  .mock-body {
+    padding: 20px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .mock-panel {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 4px;
+    padding: 12px;
+  }
+
+  .mock-panel-title {
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 10px;
+    font-family: 'DM Mono', monospace;
+    opacity: 0.7;
+  }
+
+  .mock-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 7px;
+  }
+
+  .mock-label {
+    font-size: 9px;
+    color: rgba(255,255,255,0.35);
+    font-family: 'DM Mono', monospace;
+  }
+
+  .mock-input {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 2px;
+    padding: 3px 8px;
+    font-size: 9px;
+    color: rgba(255,255,255,0.7);
+    font-family: 'DM Mono', monospace;
+    width: 110px;
+    text-align: right;
+  }
+
+  .mock-dropdown {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 2px;
+    padding: 3px 8px;
+    font-size: 9px;
+    color: rgba(255,255,255,0.7);
+    font-family: 'DM Mono', monospace;
+    width: 110px;
+    text-align: right;
+    position: relative;
+  }
+
+  .mock-dropdown::after {
+    content: '▾';
+    position: absolute;
+    right: 4px;
+    font-size: 7px;
+    color: rgba(255,255,255,0.3);
+  }
+
+  .mock-progress {
+    margin-top: 12px;
+    height: 3px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .mock-progress-fill {
+    height: 100%;
+    width: 65%;
+    background: linear-gradient(90deg, var(--accent), var(--gold));
+    border-radius: 2px;
+    animation: progress 2s ease-in-out infinite alternate;
+  }
+
+  @keyframes progress {
+    from { width: 20%; }
+    to { width: 85%; }
+  }
+
+  .mock-btn-row {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding-top: 4px;
+  }
+
+  .mock-btn {
+    padding: 6px 16px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    border: none;
+  }
+
+  .mock-btn.secondary {
+    background: rgba(255,255,255,0.06);
+    color: rgba(255,255,255,0.4);
+  }
+
+  .mock-btn.primary {
+    background: var(--accent);
+    color: white;
+    font-weight: 500;
+  }
+
+  /* ─── STATS BAR ─── */
+  .stats-bar {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    border-bottom: 2px solid var(--ink);
+  }
+
+  .stat-item {
+    padding: 36px 32px;
+    border-right: 1px solid var(--rule);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .stat-item:last-child { border-right: none; }
+
+  .stat-item::before {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--accent);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.4s ease;
+  }
+
+  .stat-item:hover::before { transform: scaleX(1); }
+
+  .stat-number {
+    font-family: 'Syne', sans-serif;
+    font-size: 42px;
+    font-weight: 800;
+    line-height: 1;
+    margin-bottom: 8px;
+    letter-spacing: -0.04em;
+  }
+
+  .stat-number span {
+    color: var(--accent);
+    font-family: 'Instrument Serif', serif;
+    font-style: italic;
+    font-weight: 400;
+  }
+
+  .stat-label {
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--mid);
+  }
+
+  /* ─── FEATURES SECTION ─── */
+  .section {
+    padding: 80px 60px;
+    border-bottom: 2px solid var(--ink);
+  }
+
+  .section-header {
+    display: flex;
+    align-items: baseline;
+    gap: 24px;
+    margin-bottom: 60px;
+  }
+
+  .section-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--mid);
+    letter-spacing: 0.15em;
+  }
+
+  .section-title {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(28px, 3.5vw, 48px);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1;
+  }
+
+  .section-title em {
+    font-family: 'Instrument Serif', serif;
+    font-style: italic;
+    font-weight: 400;
+    color: var(--accent);
+  }
+
+  /* ─── FEATURE GRID ─── */
+  .feature-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0;
+    border: 1px solid var(--rule);
+  }
+
+  .feature-card {
+    padding: 36px 32px;
+    border-right: 1px solid var(--rule);
+    border-bottom: 1px solid var(--rule);
+    position: relative;
+    transition: background 0.2s;
+    cursor: default;
+  }
+
+  .feature-card:nth-child(3n) { border-right: none; }
+  .feature-card:nth-last-child(-n+3) { border-bottom: none; }
+
+  .feature-card:hover {
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  .feature-card:hover .feature-icon { color: var(--accent); }
+  .feature-card:hover .feature-desc { color: rgba(245,242,235,0.6); }
+
+  .feature-icon {
+    font-size: 28px;
+    margin-bottom: 20px;
+    display: block;
+    transition: color 0.2s;
+  }
+
+  .feature-name {
+    font-family: 'Syne', sans-serif;
+    font-size: 17px;
+    font-weight: 700;
+    margin-bottom: 10px;
+    letter-spacing: -0.01em;
+  }
+
+  .feature-desc {
+    font-size: 12px;
+    line-height: 1.8;
+    color: var(--mid);
+    font-weight: 300;
+    transition: color 0.2s;
+  }
+
+  /* ─── FORMAT SECTION ─── */
+  .format-row {
+    display: flex;
+    gap: 0;
+    border: 1px solid var(--rule);
+    margin-top: 24px;
+  }
+
+  .format-pill {
+    flex: 1;
+    padding: 28px 20px;
+    text-align: center;
+    border-right: 1px solid var(--rule);
+    transition: all 0.2s;
+    cursor: default;
+  }
+
+  .format-pill:last-child { border-right: none; }
+
+  .format-pill:hover {
+    background: var(--accent);
+    color: white;
+  }
+
+  .format-pill:hover .format-ext { color: white; }
+  .format-pill:hover .format-note { color: rgba(255,255,255,0.7); }
+
+  .format-ext {
+    font-family: 'Syne', sans-serif;
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    color: var(--ink);
+    transition: color 0.2s;
+  }
+
+  .format-note {
+    font-size: 10px;
+    color: var(--mid);
+    margin-top: 6px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    transition: color 0.2s;
+  }
+
+  /* ─── TEMPLATE SECTION ─── */
+  .template-section {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 80px 60px;
+    border-bottom: 2px solid var(--rule);
+  }
+
+  .template-section .section-title em { color: var(--gold); }
+  .template-section .section-num { color: rgba(245,242,235,0.3); }
+
+  .template-demo {
+    margin-top: 48px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2px;
+    background: rgba(255,255,255,0.05);
+  }
+
+  .template-row {
+    background: var(--ink);
+    padding: 24px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    gap: 16px;
+  }
+
+  .tpl-token {
+    font-family: 'DM Mono', monospace;
+    font-size: 14px;
+    color: var(--gold);
+    background: rgba(200,169,110,0.1);
+    border: 1px solid rgba(200,169,110,0.2);
+    padding: 4px 12px;
+    border-radius: 2px;
+    white-space: nowrap;
+  }
+
+  .tpl-arrow {
+    color: rgba(255,255,255,0.2);
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+
+  .tpl-result {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: rgba(245,242,235,0.5);
+    text-align: right;
+  }
+
+  .tpl-example-line {
+    grid-column: 1 / -1;
+    background: rgba(212,82,42,0.08);
+    border: 1px solid rgba(212,82,42,0.2);
+    padding: 20px 28px;
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    color: rgba(245,242,235,0.7);
+    letter-spacing: 0.03em;
+  }
+
+  .tpl-example-line strong {
+    color: var(--accent);
+    font-weight: 500;
+  }
+
+  /* ─── WORKFLOW ─── */
+  .workflow {
+    padding: 80px 60px;
+    border-bottom: 2px solid var(--ink);
+  }
+
+  .workflow-steps {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+    margin-top: 48px;
+    border: 1px solid var(--rule);
+  }
+
+  .workflow-step {
+    padding: 40px 32px;
+    border-right: 1px solid var(--rule);
+    position: relative;
+  }
+
+  .workflow-step:last-child { border-right: none; }
+
+  .step-num {
+    font-family: 'Syne', sans-serif;
+    font-size: 64px;
+    font-weight: 800;
+    color: var(--rule);
+    line-height: 1;
+    margin-bottom: 20px;
+    letter-spacing: -0.04em;
+  }
+
+  .step-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 10px;
+  }
+
+  .step-desc {
+    font-size: 12px;
+    line-height: 1.8;
+    color: var(--mid);
+    font-weight: 300;
+  }
+
+  .step-connector {
+    position: absolute;
+    right: -16px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 32px;
+    height: 2px;
+    background: var(--accent);
+    z-index: 2;
+  }
+
+  .step-connector::after {
+    content: '▶';
+    position: absolute;
+    right: -6px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 8px;
+    color: var(--accent);
+  }
+
+  /* ─── SETTINGS CALLOUT ─── */
+  .settings-callout {
+    margin: 60px 0 0;
+    padding: 40px 48px;
+    background: var(--ink);
+    color: var(--paper);
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 40px;
+  }
+
+  .callout-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: 10px;
+  }
+
+  .callout-desc {
+    font-size: 13px;
+    color: rgba(245,242,235,0.5);
+    font-weight: 300;
+    line-height: 1.7;
+  }
+
+  .callout-badge {
+    background: rgba(212,82,42,0.15);
+    border: 1px solid rgba(212,82,42,0.3);
+    color: var(--accent);
+    padding: 16px 24px;
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  .callout-badge-label {
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+    opacity: 0.6;
+  }
+
+  .callout-badge-value {
+    font-family: 'Syne', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+  }
+
+  /* ─── INSTALL ─── */
+  .install-section {
+    padding: 80px 60px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 60px;
+    border-bottom: 2px solid var(--ink);
+    align-items: start;
+  }
+
+  .install-platform {
+    padding: 32px;
+    border: 1px solid var(--rule);
+  }
+
+  .platform-name {
+    font-family: 'Syne', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .platform-icon {
+    font-size: 22px;
+  }
+
+  .install-path {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    background: #f0ece3;
+    border: 1px solid var(--rule);
+    padding: 14px 16px;
+    border-radius: 2px;
+    color: var(--accent2);
+    line-height: 1.6;
+    word-break: break-all;
+  }
+
+  /* ─── FOOTER ─── */
+  .footer {
+    padding: 40px 60px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--ink);
+    color: rgba(245,242,235,0.4);
+  }
+
+  .footer-brand {
+    font-family: 'Syne', sans-serif;
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--paper);
+    letter-spacing: -0.02em;
+  }
+
+  .footer-brand span {
+    color: var(--accent);
+    font-family: 'Instrument Serif', serif;
+    font-style: italic;
+    font-weight: 400;
+  }
+
+  .footer-note {
+    font-size: 11px;
+    letter-spacing: 0.05em;
+  }
+
+  /* ─── ANIMATIONS ─── */
+  .fade-in {
+    opacity: 0;
+    transform: translateY(24px);
+    animation: fadeIn 0.7s ease forwards;
+  }
+
+  @keyframes fadeIn {
+    to { opacity: 1; transform: none; }
+  }
+
+  .delay-1 { animation-delay: 0.1s; }
+  .delay-2 { animation-delay: 0.2s; }
+  .delay-3 { animation-delay: 0.3s; }
+  .delay-4 { animation-delay: 0.4s; }
+  .delay-5 { animation-delay: 0.5s; }
+
+  @media (max-width: 900px) {
+    .hero { grid-template-columns: 1fr; }
+    .hero-right { min-height: 400px; }
+    .stats-bar { grid-template-columns: repeat(3, 1fr); }
+    .feature-grid { grid-template-columns: 1fr 1fr; }
+    .workflow-steps { grid-template-columns: 1fr 1fr; }
+    .install-section { grid-template-columns: 1fr; }
+    .template-demo { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ─── HERO ─────────────────────────────────────────── -->
+<section class="hero">
+  <div class="hero-left">
+    <div>
+      <div class="version-tag fade-in">InDesign Script · v5.0</div>
+      <h1 class="hero-title fade-in delay-1">
+        Export<br><em>Pages</em><br>v5
+      </h1>
+      <p class="hero-subtitle fade-in delay-2">
+        Adobe InDesign için geliştirilmiş profesyonel sayfa dışa aktarma aracı. 
+        Akıllı dosya adlandırma, çoklu format desteği ve kalıcı ayar belleğiyle 
+        tekrar eden export işlerini otomatikleştirir.
+      </p>
+    </div>
+    <div class="hero-meta fade-in delay-3">
+      <div class="hero-meta-item">
+        <span class="hero-meta-label">Platform</span>
+        <span class="hero-meta-value">Windows / macOS</span>
+      </div>
+      <div class="hero-meta-item">
+        <span class="hero-meta-label">InDesign</span>
+        <span class="hero-meta-value">CC 2019 → 2025</span>
+      </div>
+      <div class="hero-meta-item">
+        <span class="hero-meta-label">Format</span>
+        <span class="hero-meta-value">JSX Script</span>
+      </div>
+      <div class="hero-meta-item">
+        <span class="hero-meta-label">Versiyon</span>
+        <span class="hero-meta-value">5.0 Stabil</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="hero-right fade-in delay-2">
+    <div class="mock-ui">
+      <div class="mock-window">
+        <div class="mock-titlebar">
+          <div class="mock-dot red"></div>
+          <div class="mock-dot yellow"></div>
+          <div class="mock-dot green"></div>
+          <span class="mock-title-text">Profesyonel Export  v5.0</span>
+        </div>
+        <div class="mock-body">
+          <div class="mock-panel">
+            <div class="mock-panel-title">Stil Seçimi</div>
+            <div class="mock-row">
+              <span class="mock-label">Paragraf Stili</span>
+              <div class="mock-dropdown" style="width:120px">Başlık 1</div>
+            </div>
+            <div class="mock-row">
+              <span class="mock-label">Karakter Stili</span>
+              <div class="mock-dropdown" style="width:120px">(Kullanma)</div>
+            </div>
+          </div>
+          <div class="mock-panel">
+            <div class="mock-panel-title">Output Format</div>
+            <div class="mock-row">
+              <span class="mock-label">Format</span>
+              <div class="mock-dropdown" style="width:80px">PDF</div>
+            </div>
+            <div class="mock-row">
+              <span class="mock-label">PDF Preset</span>
+              <div class="mock-dropdown" style="width:80px">Print HD</div>
+            </div>
+          </div>
+          <div class="mock-panel">
+            <div class="mock-panel-title">Dosya Adı Şablonu</div>
+            <div class="mock-row">
+              <span class="mock-label">Şablon</span>
+              <div class="mock-input">{para}_s{page}</div>
+            </div>
+            <div class="mock-row">
+              <span class="mock-label">Ön Ek</span>
+              <div class="mock-input">2024_</div>
+            </div>
+            <div class="mock-row">
+              <span class="mock-label">Son Ek</span>
+              <div class="mock-input">_TR</div>
+            </div>
+          </div>
+          <div class="mock-panel">
+            <div class="mock-panel-title">Sayfa Aralığı</div>
+            <div class="mock-row">
+              <span class="mock-label">Aralık</span>
+              <div class="mock-input">1-24</div>
+            </div>
+            <div class="mock-row">
+              <span class="mock-label">Export Türü</span>
+              <div class="mock-dropdown" style="width:80px">Page</div>
+            </div>
+            <div class="mock-progress">
+              <div class="mock-progress-fill"></div>
+            </div>
+          </div>
+          <div class="mock-btn-row">
+            <button class="mock-btn secondary">Ayarları Sıfırla</button>
+            <button class="mock-btn secondary">İptal</button>
+            <button class="mock-btn primary">Aktar  »</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── STATS ─────────────────────────────────────────── -->
+<div class="stats-bar">
+  <div class="stat-item fade-in">
+    <div class="stat-number">5<span>+</span></div>
+    <div class="stat-label">Export Formatı</div>
+  </div>
+  <div class="stat-item fade-in delay-1">
+    <div class="stat-number">12<span>+</span></div>
+    <div class="stat-label">Özellik Paneli</div>
+  </div>
+  <div class="stat-item fade-in delay-2">
+    <div class="stat-number">∞</div>
+    <div class="stat-label">Sayfa Kapasitesi</div>
+  </div>
+  <div class="stat-item fade-in delay-3">
+    <div class="stat-number">0<span>s</span></div>
+    <div class="stat-label">Kurulum Süresi</div>
+  </div>
+  <div class="stat-item fade-in delay-4">
+    <div class="stat-number">100<span>%</span></div>
+    <div class="stat-label">Ayar Kalıcılığı</div>
+  </div>
+</div>
+
+<!-- ─── FEATURES ─────────────────────────────────────────── -->
+<section class="section">
+  <div class="section-header">
+    <span class="section-num">01</span>
+    <h2 class="section-title">Tüm <em>Özellikler</em></h2>
+  </div>
+
+  <div class="feature-grid">
+    <div class="feature-card">
+      <span class="feature-icon">🏷️</span>
+      <div class="feature-name">Akıllı Dosya Adlandırma</div>
+      <div class="feature-desc">Paragraf ve karakter stillerinden metni otomatik çeker. Şablon sistemi ile {para}, {doc}, {date}, {page}, {total} değişkenlerini dilediğiniz gibi birleştirin.</div>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">🔤</span>
+      <div class="feature-name">Ön Ek / Son Ek Desteği</div>
+      <div class="feature-desc">Dosya adına prefix ve suffix ekleyin. <code style="background:#f0ece3;padding:1px 5px;font-size:11px">2024_</code> ön eki veya <code style="background:#f0ece3;padding:1px 5px;font-size:11px">_TR</code> son eki ile toplu dosyaları kolayca organize edin.</div>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">💾</span>
+      <div class="feature-name">Kalıcı Ayar Belleği</div>
+      <div class="feature-desc">Script kapansa bile tüm ayarlar JSON dosyasına kaydedilir. Bilgisayarı yeniden başlatsanız dahi klasör yolu, stil seçimi, format ve tüm tercihler hatırlanır.</div>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">📄</span>
+      <div class="feature-name">Çoklu Format Desteği</div>
+      <div class="feature-desc">JPG, PNG, PDF, EPS ve TIFF formatlarına tek ekrandan export edin. PDF Preset, Bleed ve Slug seçenekleri dahil.</div>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">📊</span>
+      <div class="feature-name">Canlı İlerleme Çubuğu</div>
+      <div class="feature-desc">Her sayfa işlenirken gerçek zamanlı progress bar gösterir. Kaç sayfa aktarıldı, kaçı atlandı anlık takip edin.</div>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">🎯</span>
+      <div class="feature-name">Sayfa Aralığı Seçimi</div>
+      <div class="feature-desc">Tüm sayfalar ya da özel aralık: <code style="background:#f0ece3;padding:1px 5px;font-size:11px">1-5, 8, 12-15</code> gibi karmaşık aralıkları destekler.</div>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">🗂️</span>
+      <div class="feature-name">Layer Görünürlük Kontrolü</div>
+      <div class="feature-desc">Export öncesi hangi katmanların görünür olacağını seçin. "Hepsini Aç / Kapat" butonlarıyla hızlı toplu kontrol.</div>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">📐</span>
+      <div class="feature-name">Master Page Filtresi</div>
+      <div class="feature-desc">Yalnızca belirli bir master page'e atanmış sayfaları export edin. Karmaşık belgelerde hassas filtreleme.</div>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">⚡</span>
+      <div class="feature-name">Export Sonrası Klasör Aç</div>
+      <div class="feature-desc">İşlem tamamlanınca çıktı klasörü otomatik açılır. Dosyaları aramak için zaman kaybetmeyin.</div>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">🚫</span>
+      <div class="feature-name">Boş Sayfa Atlama</div>
+      <div class="feature-desc">İçeriksiz sayfaları otomatik tespit eder ve atlar. Gereksiz boş dosyaların oluşmasını engeller.</div>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">📋</span>
+      <div class="feature-name">Spread / Page Modu</div>
+      <div class="feature-desc">Sayfaları tek tek veya spread olarak (çift sayfa bir arada) export edin. Yayın ve sunum ihtiyaçlarına göre seçin.</div>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">↺</span>
+      <div class="feature-name">Ayarları Sıfırla</div>
+      <div class="feature-desc">Tek tıkla tüm kayıtlı ayarları sil ve varsayılanlara dön. Yeni proje için temiz başlangıç.</div>
+    </div>
+  </div>
+
+  <!-- Format satırı -->
+  <div style="margin-top:48px">
+    <div style="font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:var(--mid);margin-bottom:16px">Desteklenen Formatlar</div>
+    <div class="format-row">
+      <div class="format-pill">
+        <div class="format-ext">JPG</div>
+        <div class="format-note">Kalite + DPI</div>
+      </div>
+      <div class="format-pill">
+        <div class="format-ext">PNG</div>
+        <div class="format-note">Yüksek Kalite</div>
+      </div>
+      <div class="format-pill">
+        <div class="format-ext">PDF</div>
+        <div class="format-note">Preset Desteği</div>
+      </div>
+      <div class="format-pill">
+        <div class="format-ext">EPS</div>
+        <div class="format-note">Vektör</div>
+      </div>
+      <div class="format-pill">
+        <div class="format-ext">TIFF</div>
+        <div class="format-note">Baskı Kalitesi</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── TEMPLATE ENGINE ─────────────────────────────────────────── -->
+<section class="template-section">
+  <div class="section-header">
+    <span class="section-num" style="color:rgba(245,242,235,0.25)">02</span>
+    <h2 class="section-title">Şablon <em>Motoru</em></h2>
+  </div>
+
+  <div class="template-demo">
+    <div class="template-row">
+      <span class="tpl-token">{para}</span>
+      <span class="tpl-arrow">→</span>
+      <span class="tpl-result">Sayfadaki paragraf metni</span>
+    </div>
+    <div class="template-row">
+      <span class="tpl-token">{doc}</span>
+      <span class="tpl-arrow">→</span>
+      <span class="tpl-result">Belge adı (uzantısız)</span>
+    </div>
+    <div class="template-row">
+      <span class="tpl-token">{date}</span>
+      <span class="tpl-arrow">→</span>
+      <span class="tpl-result">2025-01-15</span>
+    </div>
+    <div class="template-row">
+      <span class="tpl-token">{page}</span>
+      <span class="tpl-arrow">→</span>
+      <span class="tpl-result">001, 002, 003…</span>
+    </div>
+    <div class="template-row">
+      <span class="tpl-token">{total}</span>
+      <span class="tpl-arrow">→</span>
+      <span class="tpl-result">Toplam sayfa sayısı</span>
+    </div>
+    <div class="template-row">
+      <span class="tpl-token">prefix + suffix</span>
+      <span class="tpl-arrow">→</span>
+      <span class="tpl-result">Başa / sona eklenir</span>
+    </div>
+
+    <div class="tpl-example-line">
+      <strong>Ön Ek:</strong> 2024_ &nbsp;·&nbsp; <strong>Şablon:</strong> {para}_s{page} &nbsp;·&nbsp; <strong>Son Ek:</strong> _TR<br>
+      <strong style="color:rgba(245,242,235,0.4)">Sonuç →</strong> &nbsp;2024_<strong style="color:white">GirisKapisi</strong>_s001_TR.pdf
+    </div>
+  </div>
+</section>
+
+<!-- ─── WORKFLOW ─────────────────────────────────────────── -->
+<section class="workflow">
+  <div class="section-header">
+    <span class="section-num">03</span>
+    <h2 class="section-title">Nasıl <em>Çalışır?</em></h2>
+  </div>
+
+  <div class="workflow-steps">
+    <div class="workflow-step">
+      <div class="step-num">01</div>
+      <div class="step-title">Scripti Yükle</div>
+      <div class="step-desc">JSX dosyasını InDesign'ın Scripts Panel klasörüne kopyalayın. Kurulum gerektirmez.</div>
+      <div class="step-connector"></div>
+    </div>
+    <div class="workflow-step">
+      <div class="step-num">02</div>
+      <div class="step-title">Ayarları Yap</div>
+      <div class="step-desc">Paragraf stili, format, şablon, ön ek / son ek ve çıktı klasörünü seçin. Ayarlar otomatik kaydedilir.</div>
+      <div class="step-connector"></div>
+    </div>
+    <div class="workflow-step">
+      <div class="step-num">03</div>
+      <div class="step-title">Aktar →</div>
+      <div class="step-desc">Aktar butonuna basın. Progress bar eşliğinde tüm sayfalar işlenir, boş sayfalar otomatik atlanır.</div>
+      <div class="step-connector"></div>
+    </div>
+    <div class="workflow-step">
+      <div class="step-num">04</div>
+      <div class="step-title">Hazır!</div>
+      <div class="step-desc">İşlem raporu görüntülenir. Klasör otomatik açılır. Bir sonraki açılışta tüm ayarlar sizi bekler.</div>
+    </div>
+  </div>
+
+  <div class="settings-callout">
+    <div>
+      <div class="callout-title">💾 Kalıcı Ayar Sistemi</div>
+      <div class="callout-desc">
+        "Ayarları otomatik kaydet" onay kutusu aktifken tüm tercihler diske JSON olarak yazılır.<br>
+        Bilgisayarı kapatsanız, InDesign'ı güncelleseniz bile klasör yolu, stil seçimi, şablon ve diğer tüm ayarlar bir sonraki açılışta sizi bekler. Sıfırlamak istediğinizde "Ayarları Sıfırla" butonu yeterli.
+      </div>
+    </div>
+    <div class="callout-badge">
+      <div class="callout-badge-label">Kayıt Yeri</div>
+      <div class="callout-badge-value">Downloads/<br>settings.json</div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── INSTALL ─────────────────────────────────────────── -->
+<section class="install-section">
+  <div>
+    <div class="section-header" style="margin-bottom:32px">
+      <span class="section-num">04</span>
+      <h2 class="section-title">Kurulum</h2>
+    </div>
+    <p style="font-size:13px;line-height:1.9;color:var(--mid);font-weight:300;margin-bottom:32px">
+      Script dosyasını aşağıdaki klasöre kopyalayın. InDesign'ı yeniden başlatmanıza gerek yok — Scripts Panel'i yenilemek yeterli.
+    </p>
+    <div style="font-size:12px;line-height:2;color:var(--mid)">
+      <strong style="color:var(--ink);font-family:'Syne',sans-serif">Window</strong> menüsü → <strong style="color:var(--ink);font-family:'Syne',sans-serif">Utilities</strong> → <strong style="color:var(--ink);font-family:'Syne',sans-serif">Scripts Panel</strong><br>
+      Panel içinde sağ tıklayın → <strong style="color:var(--accent)">Reveal in Explorer / Finder</strong><br>
+      JSX dosyasını <strong style="color:var(--ink)">Scripts Panel</strong> klasörüne bırakın.
+    </div>
+  </div>
+  <div>
+    <div class="install-platform">
+      <div class="platform-name">
+        <span class="platform-icon">🪟</span> Windows
+      </div>
+      <div class="install-path">C:\Users\[kullanıcı]\AppData\Roaming\Adobe\InDesign\Version [XX.0]\[dil]\Scripts\Scripts Panel\ExportPages_v5.jsx</div>
+    </div>
+    <div class="install-platform" style="margin-top:16px">
+      <div class="platform-name">
+        <span class="platform-icon">🍎</span> macOS
+      </div>
+      <div class="install-path">~/Library/Preferences/Adobe InDesign/Version [XX.0]/[dil]/Scripts/Scripts Panel/ExportPages_v5.jsx</div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── FOOTER ─────────────────────────────────────────── -->
+<footer class="footer">
+  <div class="footer-brand">Export<span>Pages</span> v5</div>
+  <div class="footer-note">Adobe InDesign JSX Script · CC 2019–2025 Uyumlu · Windows & macOS</div>
+</footer>
+
+<script>
+  // Intersection Observer ile scroll animasyonları
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(el => {
+      if (el.isIntersecting) {
+        el.target.style.opacity = '1';
+        el.target.style.transform = 'none';
+      }
+    });
+  }, { threshold: 0.1 });
+
+  document.querySelectorAll('.feature-card, .stat-item, .workflow-step, .format-pill').forEach(el => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(20px)';
+    el.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+    observer.observe(el);
+  });
+</script>
+</body>
+</html>
